@@ -10,8 +10,19 @@ import { Textarea } from '@/components/ui/textarea'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 
 interface SheetRow {
-  id: string
-  [key: string]: any
+  rowIndex?: number
+  dateBooked: string
+  appointmentDate: string
+  appointmentTime: string
+  day: string
+  callerName: string
+  callerEmail: string
+  callerPhone: string
+  businessName: string
+  eventId: string
+  status: string
+  reminderSent: string
+  showNoShow: string
 }
 
 export default function AdminData() {
@@ -25,7 +36,7 @@ export default function AdminData() {
   const fetchRows = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/sheets/rows', { cache: 'no-store' })
+      const res = await fetch('/api/sheets/get', { cache: 'no-store' })
       const data = await res.json()
       setRows(data)
     } catch (error) {
@@ -41,7 +52,20 @@ export default function AdminData() {
 
   const handleAdd = () => {
     setEditingRow(null)
-    setFormData({})
+    setFormData({
+      dateBooked: new Date().toISOString().split('T')[0],
+      appointmentDate: '',
+      appointmentTime: '',
+      day: '',
+      callerName: '',
+      callerEmail: '',
+      callerPhone: '',
+      businessName: '',
+      eventId: `EVT-${Date.now()}`,
+      status: '',
+      reminderSent: '',
+      showNoShow: '',
+    })
     setShowDialog(true)
   }
 
@@ -51,11 +75,15 @@ export default function AdminData() {
     setShowDialog(true)
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (row: SheetRow) => {
     if (!confirm('Are you sure you want to delete this record?')) return
 
     try {
-      await fetch(`/api/sheets/rows/${id}`, { method: 'DELETE' })
+      await fetch('/api/sheets/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: row.eventId, rowIndex: row.rowIndex }),
+      })
       fetchRows()
     } catch (error) {
       console.error('Error deleting row:', error)
@@ -67,13 +95,13 @@ export default function AdminData() {
 
     try {
       if (editingRow) {
-        await fetch(`/api/sheets/rows/${editingRow.id}`, {
-          method: 'PATCH',
+        await fetch('/api/sheets/update', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
         })
       } else {
-        await fetch('/api/sheets/rows', {
+        await fetch('/api/sheets/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
@@ -87,7 +115,27 @@ export default function AdminData() {
     }
   }
 
-  const headers = rows.length > 0 ? Object.keys(rows[0]).filter(k => k !== 'id') : []
+  const headers = [
+    'dateBooked',
+    'appointmentDate',
+    'appointmentTime',
+    'day',
+    'callerName',
+    'callerEmail',
+    'callerPhone',
+    'businessName',
+    'eventId',
+    'status',
+    'reminderSent',
+    'showNoShow',
+  ]
+
+  const formatHeaderName = (header: string) => {
+    return header
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim()
+  }
 
   return (
     <div className="space-y-6">
@@ -140,7 +188,7 @@ export default function AdminData() {
                   <tr className="border-b-2 border-black/10 bg-[#F8F6F2]">
                     {headers.map((header) => (
                       <th key={header} className="text-left py-4 px-6 font-semibold text-[#000000] text-sm uppercase tracking-wide">
-                        {header.charAt(0).toUpperCase() + header.slice(1)}
+                        {formatHeaderName(header)}
                       </th>
                     ))}
                     <th className="text-left py-4 px-6 font-semibold text-[#000000] text-sm uppercase tracking-wide">Actions</th>
@@ -173,13 +221,17 @@ export default function AdminData() {
                     </tr>
                   ) : (
                     rows.map((row, index) => (
-                      <tr key={row.id} className={`border-b border-black/5 hover:bg-[#F8F6F2]/50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-[#F8F6F2]/20'}`}>
+                      <tr
+                        key={row.eventId}
+                        onClick={() => handleEdit(row)}
+                        className={`border-b border-black/5 hover:bg-[#F8F6F2]/50 transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-[#F8F6F2]/20'}`}
+                      >
                         {headers.map((header) => (
-                          <td key={`${row.id}-${header}`} className="py-4 px-6 text-[#000000] text-sm">
-                            {row[header] || <span className="text-gray-400">-</span>}
+                          <td key={`${row.eventId}-${header}`} className="py-4 px-6 text-[#000000] text-sm">
+                            {row[header as keyof SheetRow] || <span className="text-gray-400">-</span>}
                           </td>
                         ))}
-                        <td className="py-4 px-6">
+                        <td className="py-4 px-6" onClick={(e) => e.stopPropagation()}>
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
@@ -192,7 +244,7 @@ export default function AdminData() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(row.id)}
+                              onClick={() => handleDelete(row)}
                               className="hover:bg-red-50 hover:text-red-600"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -234,29 +286,143 @@ export default function AdminData() {
 
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-              {headers.map((header) => (
-                <div key={header} className="space-y-2">
-                  <Label htmlFor={header}>
-                    {header.charAt(0).toUpperCase() + header.slice(1)}
-                  </Label>
-                  {header.toLowerCase().includes('notes') || header.toLowerCase().includes('description') ? (
-                    <Textarea
-                      id={header}
-                      value={formData[header] || ''}
-                      onChange={(e) => setFormData({ ...formData, [header]: e.target.value })}
-                    />
-                  ) : (
-                    <Input
-                      id={header}
-                      value={formData[header] || ''}
-                      onChange={(e) => setFormData({ ...formData, [header]: e.target.value })}
-                    />
-                  )}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dateBooked">Date Booked</Label>
+                  <Input
+                    id="dateBooked"
+                    type="date"
+                    value={formData.dateBooked || ''}
+                    onChange={(e) => setFormData({ ...formData, dateBooked: e.target.value })}
+                  />
                 </div>
-              ))}
+                <div className="space-y-2">
+                  <Label htmlFor="appointmentDate">Appointment Date</Label>
+                  <Input
+                    id="appointmentDate"
+                    type="date"
+                    value={formData.appointmentDate || ''}
+                    onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="appointmentTime">Appointment Time</Label>
+                  <Input
+                    id="appointmentTime"
+                    type="time"
+                    value={formData.appointmentTime || ''}
+                    onChange={(e) => setFormData({ ...formData, appointmentTime: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="day">Day</Label>
+                  <Input
+                    id="day"
+                    placeholder="e.g., Monday"
+                    value={formData.day || ''}
+                    onChange={(e) => setFormData({ ...formData, day: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="callerName">Caller Name</Label>
+                <Input
+                  id="callerName"
+                  value={formData.callerName || ''}
+                  onChange={(e) => setFormData({ ...formData, callerName: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="callerEmail">Caller Email</Label>
+                  <Input
+                    id="callerEmail"
+                    type="email"
+                    value={formData.callerEmail || ''}
+                    onChange={(e) => setFormData({ ...formData, callerEmail: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="callerPhone">Caller Phone</Label>
+                  <Input
+                    id="callerPhone"
+                    type="tel"
+                    value={formData.callerPhone || ''}
+                    onChange={(e) => setFormData({ ...formData, callerPhone: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="businessName">Business Name</Label>
+                <Input
+                  id="businessName"
+                  value={formData.businessName || ''}
+                  onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="eventId">Event ID</Label>
+                <Input
+                  id="eventId"
+                  value={formData.eventId || ''}
+                  onChange={(e) => setFormData({ ...formData, eventId: e.target.value })}
+                  disabled={!!editingRow}
+                  className={editingRow ? 'bg-gray-100' : ''}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Input
+                    id="status"
+                    placeholder="e.g., Confirmed, Pending"
+                    value={formData.status || ''}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reminderSent">Reminder Sent</Label>
+                  <Input
+                    id="reminderSent"
+                    placeholder="e.g., Yes, No"
+                    value={formData.reminderSent || ''}
+                    onChange={(e) => setFormData({ ...formData, reminderSent: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="showNoShow">Show/No-Show</Label>
+                <Input
+                  id="showNoShow"
+                  placeholder="e.g., Show, No-Show"
+                  value={formData.showNoShow || ''}
+                  onChange={(e) => setFormData({ ...formData, showNoShow: e.target.value })}
+                />
+              </div>
             </div>
 
             <DialogFooter>
+              {editingRow && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    handleDelete(editingRow)
+                    setShowDialog(false)
+                  }}
+                >
+                  Delete
+                </Button>
+              )}
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                 Cancel
               </Button>
