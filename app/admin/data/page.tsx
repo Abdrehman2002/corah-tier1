@@ -38,9 +38,10 @@ export default function AdminData() {
     try {
       const res = await fetch('/api/sheets/get', { cache: 'no-store' })
       const data = await res.json()
-      setRows(data)
+      setRows(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching rows:', error)
+      setRows([])
     } finally {
       setLoading(false)
     }

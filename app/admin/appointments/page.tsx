@@ -43,9 +43,10 @@ export default function AdminAppointments() {
         `/api/google-calendar/list-events?timeMin=${firstDay.toISOString()}&timeMax=${lastDay.toISOString()}`
       )
       const data = await res.json()
-      setEvents(data)
+      setEvents(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching events:', error)
+      setEvents([])
     } finally {
       setLoading(false)
     }
