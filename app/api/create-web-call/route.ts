@@ -5,7 +5,7 @@ import Retell from 'retell-sdk'
 // The API key MUST be stored server-side in .env.local as RETELL_API_KEY
 // NEVER expose the API key on the frontend
 const client = new Retell({
-  apiKey: process.env.RETELL_API_KEY,
+  apiKey: process.env.RETELL_API_KEY!,
 })
 
 export async function POST(request: NextRequest) {
