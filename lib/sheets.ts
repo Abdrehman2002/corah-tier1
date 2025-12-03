@@ -17,11 +17,12 @@ export interface SheetRow {
 
 export interface DashboardMetrics {
   totalCalls: number
-  totalLeads: number
   answeredCalls: number
-  missedCalls: number
+  missedRevenueSaved: number
+  totalRevenueSaved: number
+  upcomingAppointments: number
   callsPerDay: { date: string; calls: number }[]
-  leadsPerDay: { date: string; leads: number }[]
+  revenuePerDay: { date: string; revenue: number }[]
 }
 
 export async function getSheetRows(): Promise<SheetRow[]> {
@@ -146,21 +147,56 @@ export async function deleteSheetRow(id: string): Promise<void> {
 
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   try {
-    const rows = await getSheetRows()
+    const sheets = getSheetsClient()
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'A:M',
+    })
+
+    const rows = response.data.values || []
+
+    if (rows.length === 0) {
+      return {
+        totalCalls: 0,
+        answeredCalls: 0,
+        missedRevenueSaved: 0,
+        totalRevenueSaved: 0,
+        upcomingAppointments: 0,
+        callsPerDay: [],
+        revenuePerDay: [],
+      }
+    }
+
+    // Skip header row and map data
+    const dataRows = rows.slice(1).map(row => ({
+      dateBooked: row[0] || '',
+      appointmentDate: row[1] || '',
+      appointmentTime: row[2] || '',
+      day: row[3] || '',
+      callerName: row[4] || '',
+      callerEmail: row[5] || '',
+      callerPhone: row[6] || '',
+      businessName: row[7] || '',
+      eventId: row[8] || '',
+      status: row[9] || '',
+      reminderSent: row[10] || '',
+      showNoShow: row[11] || '',
+      summary: row[12] || '',
+    })).filter(row => row.dateBooked || row.appointmentDate || row.callerName)
 
     const now = new Date()
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
     let totalCalls = 0
-    let totalLeads = 0
-    let answeredCalls = 0
-    let missedCalls = 0
-
     const callsByDate: Record<string, number> = {}
-    const leadsByDate: Record<string, number> = {}
+    const appointmentsByDate: Record<string, number> = {}
 
-    rows.forEach(row => {
-      const timestamp = row.timestamp ? new Date(row.timestamp) : new Date()
+    dataRows.forEach(row => {
+      const dateValue = row.dateBooked
+      if (!dateValue) return
+
+      const timestamp = new Date(dateValue)
+      if (isNaN(timestamp.getTime())) return
 
       if (timestamp >= thirtyDaysAgo) {
         totalCalls++
@@ -168,44 +204,60 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
         const dateStr = timestamp.toISOString().split('T')[0]
         callsByDate[dateStr] = (callsByDate[dateStr] || 0) + 1
 
-        if (row.status?.toLowerCase() === 'answered') {
-          answeredCalls++
-        } else if (row.status?.toLowerCase() === 'missed') {
-          missedCalls++
-        }
-
-        if (row.leadname || row.leadphone) {
-          totalLeads++
-          leadsByDate[dateStr] = (leadsByDate[dateStr] || 0) + 1
+        // Count appointments (rows with Date Booked) for revenue calculation
+        if (row.dateBooked) {
+          appointmentsByDate[dateStr] = (appointmentsByDate[dateStr] || 0) + 1
         }
       }
     })
 
-    const callsPerDay = Object.entries(callsByDate)
-      .map(([date, calls]) => ({ date, calls }))
-      .sort((a, b) => a.date.localeCompare(b.date))
+    // answeredCalls = totalCalls (we don't track missed calls separately)
+    const answeredCalls = totalCalls
 
-    const leadsPerDay = Object.entries(leadsByDate)
-      .map(([date, leads]) => ({ date, leads }))
-      .sort((a, b) => a.date.localeCompare(b.date))
+    // Missed Revenue Saved = totalCalls * 300
+    const missedRevenueSaved = totalCalls * 300
+
+    // Create last 10 days array with proper date formatting
+    const callsPerDay: { date: string; calls: number }[] = []
+    const revenuePerDay: { date: string; revenue: number }[] = []
+
+    for (let i = 9; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+      const dateStr = date.toISOString().split('T')[0]
+      const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`
+
+      callsPerDay.push({
+        date: formattedDate,
+        calls: callsByDate[dateStr] || 0,
+      })
+
+      // Revenue = number of appointments booked on that day × $300
+      const appointments = appointmentsByDate[dateStr] || 0
+      revenuePerDay.push({
+        date: formattedDate,
+        revenue: appointments * 300,
+      })
+    }
 
     return {
       totalCalls,
-      totalLeads,
       answeredCalls,
-      missedCalls,
+      missedRevenueSaved,
+      totalRevenueSaved: 0, // Will be calculated in API route
+      upcomingAppointments: 0, // Will be calculated in API route
       callsPerDay,
-      leadsPerDay,
+      revenuePerDay,
     }
   } catch (error) {
     console.error('Error getting dashboard metrics:', error)
     return {
       totalCalls: 0,
-      totalLeads: 0,
       answeredCalls: 0,
-      missedCalls: 0,
+      missedRevenueSaved: 0,
+      totalRevenueSaved: 0,
+      upcomingAppointments: 0,
       callsPerDay: [],
-      leadsPerDay: [],
+      revenuePerDay: [],
     }
   }
 }

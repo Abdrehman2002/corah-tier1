@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Database, Calendar, Building, LogOut, ChevronsRight, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, Database, Calendar, Building, LogOut, ChevronsRight, ChevronDown, Headset } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DashboardLayoutProps {
@@ -26,12 +26,17 @@ export default function DashboardLayout({ mode, children }: DashboardLayoutProps
 
   const basePath = `/${mode}`
 
-  const navItems = [
+  const baseNavItems = [
     { label: 'Overview', path: `${basePath}/overview`, icon: LayoutDashboard },
     { label: 'Data', path: `${basePath}/data`, icon: Database },
     { label: 'Appointments', path: `${basePath}/appointments`, icon: Calendar },
     { label: 'Business Info', path: `${basePath}/business-info`, icon: Building },
   ]
+
+  // Add Agent Selector only for admin
+  const navItems = mode === 'admin'
+    ? [...baseNavItems, { label: 'Agent Selector', path: `${basePath}/agent-selector`, icon: Headset }]
+    : baseNavItems
 
   return (
     <div className="flex min-h-screen w-full bg-[#F8F6F2]">

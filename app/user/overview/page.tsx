@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Phone, Users, CheckCircle, XCircle, Calendar } from 'lucide-react'
+import { Phone, CheckCircle, DollarSign, Power, Calendar } from 'lucide-react'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface Metrics {
   totalCalls: number
-  totalLeads: number
   answeredCalls: number
-  missedCalls: number
+  missedRevenueSaved: number
+  totalRevenueSaved: number
+  upcomingAppointments: number
   callsPerDay: { date: string; calls: number }[]
-  leadsPerDay: { date: string; leads: number }[]
+  revenuePerDay: { date: string; revenue: number }[]
 }
 
 interface CalendarSummary {
@@ -23,20 +24,24 @@ export default function UserOverview() {
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [calendarSummary, setCalendarSummary] = useState<CalendarSummary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [agentOn, setAgentOn] = useState<boolean>(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [metricsRes, calendarRes] = await Promise.all([
+        const [metricsRes, calendarRes, agentStatusRes] = await Promise.all([
           fetch('/api/overview'),
           fetch('/api/calendar/summary'),
+          fetch('/api/agent-status'),
         ])
 
         const metricsData = await metricsRes.json()
         const calendarData = await calendarRes.json()
+        const agentStatusData = await agentStatusRes.json()
 
         setMetrics(metricsData)
         setCalendarSummary(calendarData)
+        setAgentOn(agentStatusData.active ?? true)
       } catch (error) {
         console.error('Error fetching overview data:', error)
       } finally {
@@ -47,16 +52,15 @@ export default function UserOverview() {
     fetchData()
   }, [])
 
+  const currencyFormatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  })
+
   if (loading) {
     return <div className="text-center py-12">Loading...</div>
   }
-
-  const pieData = [
-    { name: 'Answered', value: metrics?.answeredCalls || 0 },
-    { name: 'Missed', value: metrics?.missedCalls || 0 },
-  ]
-
-  const COLORS = ['#000000', '#999999']
 
   return (
     <div className="space-y-6">
@@ -82,17 +86,6 @@ export default function UserOverview() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics?.totalLeads || 0}</div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Answered Calls</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -104,23 +97,42 @@ export default function UserOverview() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Missed Calls</CardTitle>
-            <XCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Possible Revenue Saved</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics?.missedCalls || 0}</div>
+            <div className="text-2xl font-bold">
+              {currencyFormatter.format(metrics?.missedRevenueSaved || 0)}
+            </div>
             <p className="text-xs text-muted-foreground">Last 30 days</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Appointments</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Revenue Saved</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{calendarSummary?.upcomingCount || 0}</div>
-            <p className="text-xs text-muted-foreground">Next 30 days</p>
+            <div className="text-2xl font-bold">
+              {currencyFormatter.format(metrics?.totalRevenueSaved || 0)}
+            </div>
+            <p className="text-xs text-muted-foreground">{metrics?.upcomingAppointments || 0} appointments</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Agent Status</CardTitle>
+            <Power className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <span className={`text-sm font-medium ${agentOn ? 'text-green-600' : 'text-gray-500'}`}>
+                {agentOn ? 'Agent is ON' : 'Agent is OFF'}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">AI Receptionist</p>
           </CardContent>
         </Card>
       </div>
@@ -147,17 +159,19 @@ export default function UserOverview() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Leads Per Day</CardTitle>
+            <CardTitle>Revenue Generated Per Day</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={metrics?.leadsPerDay || []}>
+              <BarChart data={metrics?.revenuePerDay || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
                 <XAxis dataKey="date" stroke="#2A2A2A" />
                 <YAxis stroke="#2A2A2A" />
-                <Tooltip />
+                <Tooltip
+                  formatter={(value: number) => `$${value.toLocaleString()}`}
+                />
                 <Legend />
-                <Bar dataKey="leads" fill="#000000" />
+                <Bar dataKey="revenue" fill="#000000" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -165,13 +179,16 @@ export default function UserOverview() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Call Status Distribution</CardTitle>
+            <CardTitle>Appointment Status</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={pieData}
+                  data={[
+                    { name: 'Booked', value: metrics?.upcomingAppointments || 0 },
+                    { name: 'Called', value: Math.max(0, (metrics?.answeredCalls || 0) - (metrics?.upcomingAppointments || 0)) },
+                  ]}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -180,9 +197,8 @@ export default function UserOverview() {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
+                  <Cell fill="#000000" />
+                  <Cell fill="#999999" />
                 </Pie>
                 <Tooltip />
               </PieChart>

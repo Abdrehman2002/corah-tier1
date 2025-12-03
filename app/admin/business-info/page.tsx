@@ -23,9 +23,9 @@ const defaultInfo: BusinessInfo = {
   name: 'CORAH',
   industry: 'AI Calling & Booking Services',
   location: 'United States',
-  phone: '+1 (555) 123-4567',
-  email: 'contact@corah.ai',
-  website: 'https://corah.ai',
+  phone: '+1 (956) 305-4194',
+  email: 'corahai.tx@gmail.com',
+  website: 'https://corahaitx.com',
   timezone: 'America/Chicago',
   description: 'Always on. Always professional. CORAH provides AI-powered calling and booking solutions for businesses.',
 }
@@ -188,17 +188,28 @@ export default function AdminBusinessInfo() {
 
                 <div>
                   <p className="text-sm font-medium text-[#2A2A2A] mb-1">Phone</p>
-                  <p className="text-base text-[#000000]">{info.phone}</p>
+                  <a href={`tel:${info.phone}`} className="text-base text-[#000000] hover:underline">
+                    {info.phone}
+                  </a>
                 </div>
 
                 <div>
                   <p className="text-sm font-medium text-[#2A2A2A] mb-1">Email</p>
-                  <p className="text-base text-[#000000]">{info.email}</p>
+                  <a href={`mailto:${info.email}`} className="text-base text-[#000000] hover:underline">
+                    {info.email}
+                  </a>
                 </div>
 
                 <div>
                   <p className="text-sm font-medium text-[#2A2A2A] mb-1">Website</p>
-                  <p className="text-base text-[#000000]">{info.website}</p>
+                  <a
+                    href={info.website.startsWith('http') ? info.website : `https://${info.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-base text-[#000000] hover:underline"
+                  >
+                    {info.website}
+                  </a>
                 </div>
 
                 <div>

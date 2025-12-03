@@ -10,7 +10,7 @@ export async function GET() {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'A:L',
+      range: 'A:M',
     })
 
     const rows = response.data.values || []
@@ -34,6 +34,7 @@ export async function GET() {
         status: row[9] || '',
         reminderSent: row[10] || '',
         showNoShow: row[11] || '',
+        summary: row[12] || '',
       }))
       .filter(row => row.dateBooked || row.appointmentDate || row.callerName)
 

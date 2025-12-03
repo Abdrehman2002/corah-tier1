@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDashboardMetrics } from '@/lib/sheets'
+import { getCalendarSummary } from '@/lib/calendar'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 30 // Cache for 30 seconds
@@ -14,7 +15,19 @@ export async function GET() {
       return NextResponse.json(cache.data)
     }
 
-    const metrics = await getDashboardMetrics()
+    const [sheetMetrics, calendarSummary] = await Promise.all([
+      getDashboardMetrics(),
+      getCalendarSummary(),
+    ])
+
+    const upcomingAppointments = calendarSummary.upcomingCount || 0
+    const totalRevenueSaved = upcomingAppointments * 300
+
+    const metrics = {
+      ...sheetMetrics,
+      upcomingAppointments,
+      totalRevenueSaved,
+    }
 
     // Update cache
     cache = {

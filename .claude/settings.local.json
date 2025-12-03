@@ -17,7 +17,11 @@
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
       "Bash(del appicon.png)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(dir /s /b app lib components)",
+      "Bash(npm install:*)",
+      "Bash(del nul)"
     ],
     "deny": [],
     "ask": []

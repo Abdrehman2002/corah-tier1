@@ -18,11 +18,29 @@ interface CalendarEvent {
   location?: string
 }
 
+interface SheetAppointment {
+  rowIndex: number
+  dateBooked: string
+  appointmentDate: string
+  appointmentTime: string
+  day: string
+  callerName: string
+  callerEmail: string
+  callerPhone: string
+  businessName: string
+  eventId: string
+  status: string
+  reminderSent: string
+  showNoShow: string
+  summary: string
+}
+
 export default function AdminAppointments() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [sheetAppointments, setSheetAppointments] = useState<SheetAppointment[]>([])
   const [loading, setLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [activeTab, setActiveTab] = useState<'normal' | 'google'>('normal')
+  const [activeTab, setActiveTab] = useState<'normal' | 'google' | 'table'>('table')
   const [showDialog, setShowDialog] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [formData, setFormData] = useState({
@@ -52,8 +70,22 @@ export default function AdminAppointments() {
     }
   }
 
+  const fetchSheetAppointments = async () => {
+    try {
+      const res = await fetch('/api/sheets/get')
+      const data = await res.json()
+      setSheetAppointments(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error fetching sheet appointments:', error)
+      setSheetAppointments([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchEvents()
+    fetchSheetAppointments()
   }, [currentDate])
 
   const handleAddEvent = (selectedDate?: Date) => {
@@ -206,11 +238,18 @@ export default function AdminAppointments() {
 
       <div className="flex gap-2 border-b border-black/5">
         <Button
+          variant={activeTab === 'table' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('table')}
+          className="rounded-b-none"
+        >
+          Appointments Table
+        </Button>
+        <Button
           variant={activeTab === 'normal' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('normal')}
           className="rounded-b-none"
         >
-          Normal Calendar
+          Calendar View
         </Button>
         <Button
           variant={activeTab === 'google' ? 'default' : 'ghost'}
@@ -220,6 +259,72 @@ export default function AdminAppointments() {
           Google Calendar
         </Button>
       </div>
+
+      {activeTab === 'table' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>All Appointments</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#F8F6F2] border-b border-black/5">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#2A2A2A] uppercase tracking-wider">Date Booked</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#2A2A2A] uppercase tracking-wider">Appointment Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#2A2A2A] uppercase tracking-wider">Appointment Time</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#2A2A2A] uppercase tracking-wider">Day</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#2A2A2A] uppercase tracking-wider">Caller Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#2A2A2A] uppercase tracking-wider">Caller Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#2A2A2A] uppercase tracking-wider">Caller Phone</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#2A2A2A] uppercase tracking-wider">Business Name</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/5">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-8 text-center text-sm text-[#2A2A2A]">
+                        Loading appointments...
+                      </td>
+                    </tr>
+                  ) : sheetAppointments.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-8 text-center text-sm text-[#2A2A2A]">
+                        No appointments found
+                      </td>
+                    </tr>
+                  ) : (
+                    sheetAppointments.map((appointment) => (
+                      <tr key={appointment.rowIndex} className="hover:bg-[#F8F6F2]/50 transition-colors">
+                        <td className="px-4 py-3 text-sm text-[#000000]">{appointment.dateBooked}</td>
+                        <td className="px-4 py-3 text-sm text-[#000000]">{appointment.appointmentDate}</td>
+                        <td className="px-4 py-3 text-sm text-[#000000]">{appointment.appointmentTime}</td>
+                        <td className="px-4 py-3 text-sm text-[#000000]">{appointment.day}</td>
+                        <td className="px-4 py-3 text-sm text-[#000000]">{appointment.callerName}</td>
+                        <td className="px-4 py-3 text-sm text-[#000000]">
+                          {appointment.callerEmail && (
+                            <a href={`mailto:${appointment.callerEmail}`} className="hover:underline">
+                              {appointment.callerEmail}
+                            </a>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#000000]">
+                          {appointment.callerPhone && (
+                            <a href={`tel:${appointment.callerPhone}`} className="hover:underline">
+                              {appointment.callerPhone}
+                            </a>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#000000]">{appointment.businessName}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {activeTab === 'normal' && (
         <Card>
