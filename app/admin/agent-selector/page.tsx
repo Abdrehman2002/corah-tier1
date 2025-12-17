@@ -58,6 +58,13 @@ const AGENTS: Agent[] = [
     agentId: 'agent_6ecbb6ef0fa72411251e18a0a1',
     features: ['Memberships', 'Class booking', 'Trainers'],
   },
+  {
+    id: '7',
+    name: 'Corah AI',
+    description: 'Custom configured agent',
+    agentId: 'agent_b14e82649c409bc1cb88deb100',
+    features: ['Custom features', 'Configurable', 'Flexible'],
+  },
 ]
 
 export default function AgentSelectorPage() {
