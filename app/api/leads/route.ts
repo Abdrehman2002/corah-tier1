@@ -17,7 +17,7 @@ export async function GET() {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Sheet1!A:I',
+      range: 'Sheet1!A:J',
     })
 
     const rows = response.data.values || []
@@ -29,15 +29,16 @@ export async function GET() {
     // Skip header row and map data
     const data = rows.slice(1).map((row, index) => ({
       rowIndex: index + 2, // Account for header row and 0-based indexing
-      website: row[0] || '',
-      email: row[1] || '',
-      phone: row[2] || '',
-      keyword: row[3] || '',
-      location: row[4] || '',
-      message: row[5] || '',
-      summary: row[6] || '',
-      smsMessage: row[7] || '',
-      confirmed: row[8] || '',
+      instagram: row[0] || '',
+      website: row[1] || '',
+      email: row[2] || '',
+      phone: row[3] || '',
+      keyword: row[4] || '',
+      location: row[5] || '',
+      message: row[6] || '',
+      summary: row[7] || '',
+      smsMessage: row[8] || '',
+      confirmed: row[9] || '',
     }))
 
     // Reverse the array so the bottom rows (newest) appear first

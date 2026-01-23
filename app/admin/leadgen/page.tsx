@@ -8,6 +8,7 @@ import { Mail, Loader2, PlusCircle, Check, X, RefreshCw, Edit2, Save } from 'luc
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Lead {
+  instagram: string
   website: string
   email: string
   phone: string
@@ -264,6 +265,7 @@ export default function LeadGen() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-black/5">
+                      <th className="text-left p-3 text-sm font-medium text-[#2A2A2A]">Instagram</th>
                       <th className="text-left p-3 text-sm font-medium text-[#2A2A2A]">Website</th>
                       <th className="text-left p-3 text-sm font-medium text-[#2A2A2A]">Email</th>
                       <th className="text-left p-3 text-sm font-medium text-[#2A2A2A]">Phone</th>
@@ -283,6 +285,17 @@ export default function LeadGen() {
 
                       return (
                         <tr key={lead.rowIndex} className="border-b border-black/5 hover:bg-black/5">
+                          <td className="p-3">
+                            {isEditing ? (
+                              <Input
+                                value={displayLead.instagram}
+                                onChange={(e) => handleInputChange('instagram', e.target.value)}
+                                className="min-w-[120px]"
+                              />
+                            ) : (
+                              <span className="text-sm">{displayLead.instagram}</span>
+                            )}
+                          </td>
                           <td className="p-3">
                             {isEditing ? (
                               <Input

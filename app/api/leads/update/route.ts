@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { rowIndex, website, email, phone, keyword, location, message, summary, smsMessage, confirmed } = body
+    const { rowIndex, instagram, website, email, phone, keyword, location, message, summary, smsMessage, confirmed } = body
 
     if (!rowIndex) {
       return NextResponse.json(
@@ -28,10 +28,10 @@ export async function POST(request: Request) {
     // Update the row with all values
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `Sheet1!A${rowIndex}:I${rowIndex}`,
+      range: `Sheet1!A${rowIndex}:J${rowIndex}`,
       valueInputOption: 'RAW',
       requestBody: {
-        values: [[website, email, phone, keyword, location, message, summary, smsMessage, confirmed]],
+        values: [[instagram, website, email, phone, keyword, location, message, summary, smsMessage, confirmed]],
       },
     })
 
