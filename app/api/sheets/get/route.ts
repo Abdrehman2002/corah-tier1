@@ -38,7 +38,8 @@ export async function GET() {
       }))
       .filter(row => row.dateBooked || row.appointmentDate || row.callerName)
 
-    return NextResponse.json(data)
+    // Reverse the array so the bottom rows (newest) appear first
+    return NextResponse.json(data.reverse())
   } catch (error) {
     console.error('Error fetching sheet data:', error)
     return NextResponse.json(
