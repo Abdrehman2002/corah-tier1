@@ -193,19 +193,40 @@ export default function AdminOverview() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Calls Per Day</CardTitle>
+            <CardTitle>Call Activity Trend (Last 14 Days)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={350}>
               <LineChart data={metrics?.callsPerDay || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
-                <XAxis dataKey="date" stroke="#2A2A2A" />
-                <YAxis stroke="#2A2A2A" />
-                <Tooltip />
+                <XAxis
+                  dataKey="date"
+                  stroke="#2A2A2A"
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis
+                  stroke="#2A2A2A"
+                  style={{ fontSize: '12px' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #e5e5e5',
+                    borderRadius: '8px'
+                  }}
+                />
                 <Legend />
-                <Line type="monotone" dataKey="calls" stroke="#000000" strokeWidth={2} />
+                <Line
+                  type="monotone"
+                  dataKey="calls"
+                  stroke="#000000"
+                  strokeWidth={3}
+                  dot={{ fill: '#000000', r: 4 }}
+                  activeDot={{ r: 6 }}
+                  name="Total Calls"
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -213,19 +234,36 @@ export default function AdminOverview() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Revenue Generated Per Day</CardTitle>
+            <CardTitle>Revenue Generated (Last 14 Days)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={metrics?.revenuePerDay || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
-                <XAxis dataKey="date" stroke="#2A2A2A" />
-                <YAxis stroke="#2A2A2A" />
+                <XAxis
+                  dataKey="date"
+                  stroke="#2A2A2A"
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis
+                  stroke="#2A2A2A"
+                  style={{ fontSize: '12px' }}
+                />
                 <Tooltip
                   formatter={(value: number) => `$${value.toLocaleString()}`}
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #e5e5e5',
+                    borderRadius: '8px'
+                  }}
                 />
                 <Legend />
-                <Bar dataKey="revenue" fill="#000000" />
+                <Bar
+                  dataKey="revenue"
+                  fill="#000000"
+                  radius={[4, 4, 0, 0]}
+                  name="Revenue ($)"
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -233,30 +271,44 @@ export default function AdminOverview() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Appointment Status</CardTitle>
+            <CardTitle>Conversion Rate</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={[
-                    { name: 'Booked', value: metrics?.upcomingAppointments || 0 },
-                    { name: 'Called', value: Math.max(0, (metrics?.answeredCalls || 0) - (metrics?.upcomingAppointments || 0)) },
+                    { name: 'Booked', value: metrics?.upcomingAppointments || 1 },
+                    { name: 'Inquiries Only', value: Math.max(1, (metrics?.answeredCalls || 0) - (metrics?.upcomingAppointments || 0)) },
                   ]}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                  outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
                 >
                   <Cell fill="#000000" />
-                  <Cell fill="#999999" />
+                  <Cell fill="#CCCCCC" />
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  formatter={(value: number) => `${value} calls`}
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #e5e5e5',
+                    borderRadius: '8px'
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
+            <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Conversion Rate: <span className="font-bold text-[#000000]">
+                  {metrics?.answeredCalls ? ((metrics.upcomingAppointments / metrics.answeredCalls) * 100).toFixed(1) : 0}%
+                </span>
+              </p>
+            </div>
           </CardContent>
         </Card>
 

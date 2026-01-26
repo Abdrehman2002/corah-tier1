@@ -217,11 +217,11 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     // Missed Revenue Saved = totalCalls * 300
     const missedRevenueSaved = totalCalls * 300
 
-    // Create last 10 days array with proper date formatting
+    // Create last 14 days array with proper date formatting for better trend visibility
     const callsPerDay: { date: string; calls: number }[] = []
     const revenuePerDay: { date: string; revenue: number }[] = []
 
-    for (let i = 9; i >= 0; i--) {
+    for (let i = 13; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
       const dateStr = date.toISOString().split('T')[0]
       const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`
