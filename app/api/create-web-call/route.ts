@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Retell from 'retell-sdk'
 
-// IMPORTANT: Initialize Retell SDK with API key from environment variable
-// The API key MUST be stored server-side in .env.local as RETELL_API_KEY
+// IMPORTANT: The API key MUST be stored server-side in .env.local as RETELL_API_KEY
 // NEVER expose the API key on the frontend
-const client = new Retell({
-  apiKey: process.env.RETELL_API_KEY!,
-})
+// Initialize lazily to avoid build-time errors
+
+function getRetellClient() {
+  const apiKey = process.env.RETELL_API_KEY
+
+  if (!apiKey) {
+    throw new Error('RETELL_API_KEY is not configured')
+  }
+
+  return new Retell({
+    apiKey: apiKey,
+  })
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,8 +31,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // STEP 3: Call Retell API to create a web call for the selected agent
+    // STEP 3: Initialize Retell client and call API to create a web call
     // This returns access_token, call_id, and other call details
+    const client = getRetellClient()
     const webCallResponse = await client.call.createWebCall({
       agent_id: agent_id,
     })
