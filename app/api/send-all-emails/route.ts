@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST() {
   try {
-    const webhookUrl = 'https://corah.app.n8n.cloud/webhook-test/send-all-emails'
+    const webhookUrl = 'https://corah.app.n8n.cloud/webhook/send-all-emails'
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
